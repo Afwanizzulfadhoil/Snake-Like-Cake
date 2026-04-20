@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake like Cake</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        @keyframes pulse-custom {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.05); }
+        }
+        .pulse-animation { animation: pulse-custom 2s infinite; }
+    </style>
+</head>
+<body class="bg-[#0f172a] text-[#f8fafc] min-h-screen flex items-center justify-center p-4">
+    <div id="app" class="flex flex-col lg:flex-row gap-8 max-w-6xl w-full items-stretch justify-center">
+        
+        <!-- Sidebar Kiri -->
+        <div class="w-full lg:w-72 flex flex-col gap-4">
+            <!-- Card Judul -->
+            <div class="bg-[#1e293b] border-2 border-[#334155] rounded-[1.5rem] p-6 flex flex-col items-center">
+                <div class="text-3xl font-black text-lime-400 mb-2 italic tracking-tighter uppercase">Snake like Cake</div>
+                <div class="text-[10px] uppercase tracking-[0.3em] text-slate-400 font-bold">Edisi Arkade Klasik</div>
+            </div>
+
+            <!-- Card Statistik -->
+            <div class="bg-[#1e293b] border-2 border-[#334155] rounded-[1.5rem] p-6 flex-1 flex flex-col gap-6 justify-center">
+                <div>
+                    <div class="text-xs uppercase text-slate-400 font-bold mb-1 tracking-wider">Skor Saat Ini</div>
+                    <div id="scoreDisplay" class="text-5xl font-mono font-bold text-white transition-all duration-300">000</div>
+                </div>
+                <div>
+                    <div class="text-xs uppercase text-slate-400 font-bold mb-1 tracking-wider">Skor Tertinggi</div>
+                    <div id="highScoreDisplay" class="text-3xl font-mono font-bold text-indigo-300">000</div>
+                </div>
+                <div>
+                    <div class="text-xs uppercase text-slate-400 font-bold mb-1 tracking-wider">Level Kecepatan</div>
+                    <div id="levelDisplay" class="text-2xl font-mono font-bold text-rose-400">01</div>
+                </div>
+                <div class="pt-4 border-t border-[#334155] flex justify-center">
+                    <button id="muteBtn" class="flex items-center gap-2 px-4 py-2 bg-[#334155] hover:bg-[#475569] rounded-xl transition-colors text-xs font-bold uppercase tracking-wider">
+                        <i data-lucide="volume-2" class="w-4 h-4"></i>
+                        <span>Suara Nyala</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Card Leaderboard -->
+            <div class="bg-[#1e293b] border-2 border-[#334155] rounded-[1.5rem] p-6 flex flex-col gap-4">
+                <div class="text-xs uppercase text-slate-400 font-bold tracking-wider">Papan Peringkat</div>
+                <div id="leaderboardList" class="space-y-3">
+                    <div class="text-[10px] text-slate-500 italic">Memuat...</div>
+                </div>
+            </div>
+
+            <!-- Card Kontrol -->
+            <div class="bg-[#1e293b] border-2 border-[#334155] rounded-[1.5rem] p-6">
+                <div class="text-xs uppercase text-slate-400 font-bold mb-3 tracking-wider">Kontrol</div>
+                <div class="flex flex-col items-center gap-2 mb-4">
+                    <div class="border-2 border-[#64748b] rounded-[6px] px-2 py-1 text-[12px] font-bold text-[#cbd5e1] bg-[#334155] min-w-[2rem] text-center shadow-sm">W</div>
+                    <div class="flex gap-2">
+                        <div class="border-2 border-[#64748b] rounded-[6px] px-2 py-1 text-[12px] font-bold text-[#cbd5e1] bg-[#334155] min-w-[2rem] text-center shadow-sm">A</div>
+                        <div class="border-2 border-[#64748b] rounded-[6px] px-2 py-1 text-[12px] font-bold text-[#cbd5e1] bg-[#334155] min-w-[2rem] text-center shadow-sm">S</div>
+                        <div class="border-2 border-[#64748b] rounded-[6px] px-2 py-1 text-[12px] font-bold text-[#cbd5e1] bg-[#334155] min-w-[2rem] text-center shadow-sm">D</div>
+                    </div>
+                </div>
+                <p class="text-[10px] text-center text-slate-500 leading-relaxed">
+                    Gunakan tombol panah atau WASD untuk bergerak. Makan buah untuk tumbuh dan menambah kecepatan.
+                </p>
+            </div>
+        </div>
+
+        <!-- Area Game Kanan -->
+        <div class="relative flex-none">
+            <div class="p-1 bg-[#334155] rounded-[0.6rem] shadow-2xl">
+                <canvas id="gameCanvas" width="550" height="550" class="bg-[#020617] border-[4px] border-[#334155] rounded-[0.5rem] touch-none shadow-inner"></canvas>
+            </div>
+
+            <!-- Overlays -->
+            <div id="overlay" class="absolute inset-0 z-10 flex flex-col items-center justify-center bg-slate-950/90 backdrop-blur-md rounded-[0.5rem] p-6 text-center">
+                <div id="startMenu">
+                    <div class="w-20 h-20 bg-lime-500/20 rounded-full flex items-center justify-center mb-6 mx-auto">
+                        <i data-lucide="play" class="w-10 h-10 text-lime-400 ml-1"></i>
+                    </div>
+                    <h2 class="text-4xl font-black text-white mb-2 italic">SIAP BERMAIN?</h2>
+                    <p class="text-slate-400 mb-8 max-w-[250px]">Kendalikan ular dan jadilah yang terpanjang di papan peringkat!</p>
+                    <button id="startBtn" class="px-10 py-4 bg-lime-500 hover:bg-lime-400 text-slate-950 font-black rounded-2xl transition-all transform hover:scale-105 active:scale-95 shadow-lg shadow-lime-500/20">MULAI SEKARANG</button>
+                </div>
+
+                <div id="gameOverMenu" class="hidden">
+                    <div class="w-20 h-20 bg-rose-500/20 rounded-full flex items-center justify-center mb-6 mx-auto">
+                        <i data-lucide="rotate-ccw" class="w-10 h-10 text-rose-500"></i>
+                    </div>
+                    <h2 class="text-4xl font-black text-rose-500 mb-2 italic">GAME OVER</h2>
+                    <div class="bg-slate-900/50 border border-slate-800 rounded-2xl p-6 mb-8 min-w-[200px]">
+                        <div class="text-[10px] uppercase font-bold text-slate-500 mb-1">Skor Akhir</div>
+                        <div id="finalScore" class="text-5xl font-mono font-bold text-white">000</div>
+                    </div>
+                    <button id="restartBtn" class="px-10 py-4 bg-rose-500 hover:bg-rose-400 text-white font-black rounded-2xl transition-all transform hover:scale-105 active:scale-95 shadow-lg shadow-rose-500/20">COBA LAGI</button>
+                </div>
+
+                <div id="pausedMenu" class="hidden">
+                    <div class="w-20 h-20 bg-indigo-500/20 rounded-full flex items-center justify-center mb-6 mx-auto">
+                        <i data-lucide="pause" class="w-10 h-10 text-indigo-400"></i>
+                    </div>
+                    <h2 class="text-4xl font-black text-indigo-400 mb-2 italic">DIJEDA</h2>
+                    <p class="text-slate-400 mb-8">Permainan sedang beristirahat sebentar...</p>
+                    <button id="resumeBtn" class="px-10 py-4 bg-indigo-500 hover:bg-indigo-400 text-white font-black rounded-2xl transition-all transform hover:scale-105 active:scale-95 shadow-lg shadow-indigo-500/20">LANJUTKAN</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script shadow="true">
+        // --- Sound Manager ---
+        class SoundManager {
+            constructor() {
+                this.ctx = null;
+                this.enabled = true;
+                this.musicInterval = null;
+            }
+            initCtx() { if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); }
+            toggle(state) { this.enabled = state; if (!state) this.stopMusic(); }
+            playEat() {
+                if (!this.enabled) return; this.initCtx();
+                const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+                osc.type = "sine"; osc.frequency.setValueAtTime(400, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(800, this.ctx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.1, this.ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
+                osc.connect(gain); gain.connect(this.ctx.destination); osc.start(); osc.stop(this.ctx.currentTime + 0.1);
+            }
+            playGameOver() {
+                if (!this.enabled) return; this.initCtx();
+                const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+                osc.type = "sawtooth"; osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(50, this.ctx.currentTime + 0.5);
+                gain.gain.setValueAtTime(0.1, this.ctx.currentTime); gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.5);
+                osc.connect(gain); gain.connect(this.ctx.destination); osc.start(); osc.stop(this.ctx.currentTime + 0.5);
+            }
+            playPause() {
+                if (!this.enabled) return; this.initCtx();
+                const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+                osc.type = "triangle"; osc.frequency.setValueAtTime(440, this.ctx.currentTime);
+                gain.gain.setValueAtTime(0.05, this.ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
+                osc.connect(gain); gain.connect(this.ctx.destination); osc.start(); osc.stop(this.ctx.currentTime + 0.1);
+            }
+            startMusic() {
+                if (!this.enabled || this.musicInterval) return; this.initCtx();
+                let count = 0; const notes = [130.81, 146.83, 164.81, 174.61];
+                this.musicInterval = setInterval(() => {
+                    if (!this.enabled || !this.ctx) return;
+                    const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+                    osc.type = "square"; osc.frequency.setValueAtTime(notes[count % notes.length], this.ctx.currentTime);
+                    gain.gain.setValueAtTime(0.01, this.ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.15);
+                    osc.connect(gain); gain.connect(this.ctx.destination); osc.start(); osc.stop(this.ctx.currentTime + 0.15);
+                    count++;
+                }, 250);
+            }
+            stopMusic() { if (this.musicInterval) { clearInterval(this.musicInterval); this.musicInterval = null; } }
+        }
+
+        const sound = new SoundManager();
+
+        // --- Game Logic ---
+        const GRID_SIZE = 25;
+        const INITIAL_SPEED = 150;
+        const SPEED_INCREMENT = 5;
+        const MIN_SPEED = 50;
+
+        let snake = [{ x: 10, y: 10 }];
+        let food = { x: 5, y: 5 };
+        let direction = "RIGHT";
+        let nextDirection = "RIGHT";
+        let score = 0;
+        let highScore = localStorage.getItem("snakeHighScore") || 0;
+        let gameState = "START";
+        let speed = INITIAL_SPEED;
+        let isMuted = false;
+        let gameLoop = null;
+
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        function updateUI() {
+            document.getElementById("scoreDisplay").innerText = score.toString().padStart(3, '0');
+            document.getElementById("highScoreDisplay").innerText = highScore.toString().padStart(3, '0');
+            const level = Math.floor((INITIAL_SPEED - speed) / SPEED_INCREMENT) + 1;
+            document.getElementById("levelDisplay").innerText = level.toString().padStart(2, '0');
+            
+            document.getElementById("overlay").className = gameState === "PLAYING" ? "hidden" : "absolute inset-0 z-10 flex flex-col items-center justify-center bg-slate-950/90 backdrop-blur-md rounded-[0.5rem] p-6 text-center";
+            document.getElementById("startMenu").className = gameState === "START" ? "" : "hidden";
+            document.getElementById("gameOverMenu").className = gameState === "GAME_OVER" ? "" : "hidden";
+            document.getElementById("pausedMenu").className = gameState === "PAUSED" ? "" : "hidden";
+            document.getElementById("finalScore").innerText = score.toString().padStart(3, '0');
+
+            if (gameState === "GAME_OVER") sound.playGameOver();
+            if (gameState === "PAUSED") sound.playPause();
+            if (gameState === "PLAYING") sound.startMusic();
+            else sound.stopMusic();
+        }
+
+        async function fetchLeaderboard() {
+            try {
+                const res = await fetch("/api/leaderboard");
+                if (res.ok) {
+                    const data = await res.json();
+                    const list = document.getElementById("leaderboardList");
+                    list.innerHTML = data.length ? data.map((e, idx) => `
+                        <div class="flex justify-between items-center group">
+                            <div class="flex items-center gap-2">
+                                <span class="text-[10px] font-mono text-slate-500">${idx + 1}.</span>
+                                <span class="text-sm font-bold text-slate-200">${e.score}</span>
+                            </div>
+                            <span class="text-[10px] text-slate-500 uppercase">${e.date}</span>
+                        </div>
+                    `).join('') : '<div class="text-[10px] text-slate-500 italic">Belum ada skor...</div>';
+                }
+            } catch (e) {}
+        }
+
+        async function saveScore() {
+            if (score <= 0) return;
+            const date = new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
+            try {
+                await fetch("/api/leaderboard", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ score, date })
+                });
+                fetchLeaderboard();
+            } catch (e) {}
+        }
+
+        function getRandomFood() {
+            let nf;
+            while(true) {
+                nf = { x: Math.floor(Math.random()*GRID_SIZE), y: Math.floor(Math.random()*GRID_SIZE) };
+                if (!snake.some(s => s.x === nf.x && s.y === nf.y)) break;
+            }
+            return nf;
+        }
+
+        function moveSnake() {
+            direction = nextDirection;
+            const head = { ...snake[0] };
+            if (direction === "UP") head.y--;
+            if (direction === "DOWN") head.y++;
+            if (direction === "LEFT") head.x--;
+            if (direction === "RIGHT") head.x++;
+
+            // Wall Collision
+            if (head.x < 0 || head.x >= GRID_SIZE || head.y < 0 || head.y >= GRID_SIZE) return endGame();
+            // Self Collision
+            if (snake.some(s => s.x === head.x && s.y === head.y)) return endGame();
+
+            snake.unshift(head);
+            if (head.x === food.x && head.y === food.y) {
+                score += 10;
+                if (score > highScore) {
+                    highScore = score;
+                    localStorage.setItem("snakeHighScore", highScore);
+                }
+                sound.playEat();
+                speed = Math.max(MIN_SPEED, INITIAL_SPEED - Math.floor(score / 50) * SPEED_INCREMENT);
+                food = getRandomFood();
+                clearInterval(gameLoop);
+                gameLoop = setInterval(gameStep, speed);
+            } else {
+                snake.pop();
+            }
+            draw();
+            updateUI();
+        }
+
+        function endGame() {
+            gameState = "GAME_OVER";
+            clearInterval(gameLoop);
+            saveScore();
+            updateUI();
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const size = canvas.width / GRID_SIZE;
+            
+            // Grid
+            ctx.strokeStyle = "#1e293b"; ctx.lineWidth = 0.5;
+            for(let i=0; i<GRID_SIZE; i++) {
+                ctx.beginPath(); ctx.moveTo(i*size, 0); ctx.lineTo(i*size, canvas.height); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(0, i*size); ctx.lineTo(canvas.width, i*size); ctx.stroke();
+            }
+
+            // Food
+            const fX = food.x * size + size/2; const fY = food.y * size + size/2;
+            const grad = ctx.createRadialGradient(fX, fY, 2, fX, fY, size/2);
+            grad.addColorStop(0, "#fb7185"); grad.addColorStop(1, "#be123c");
+            ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(fX, fY, size/2 - 2, 0, Math.PI*2); ctx.fill();
+
+            // Snake
+            snake.forEach((part, i) => {
+                const isHead = i === 0;
+                ctx.fillStyle = isHead ? "#a3e635" : "#65a30d";
+                ctx.shadowBlur = isHead ? 15 : 0; ctx.shadowColor = "#a3e635";
+                ctx.beginPath();
+                ctx.roundRect(part.x * size + 2, part.y * size + 2, size - 4, size - 4, isHead ? 6 : 4);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+
+                if (isHead) {
+                    ctx.fillStyle = "#0f172a";
+                    const eyePos = direction === "UP" || direction === "DOWN" ? {x1: 0.25, y1: 0.3, x2: 0.75, y2: 0.3} : {x1: 0.7, y1: 0.25, x2: 0.7, y2: 0.75};
+                    if (direction === "DOWN") { eyePos.y1 = 0.7; eyePos.y2 = 0.7; }
+                    if (direction === "LEFT") { eyePos.x1 = 0.3; eyePos.x2 = 0.3; }
+                    ctx.beginPath(); ctx.arc(part.x*size + size*eyePos.x1, part.y*size + size*eyePos.y1, 2, 0, Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(part.x*size + size*eyePos.x2, part.y*size + size*eyePos.y2, 2, 0, Math.PI*2); ctx.fill();
+                }
+            });
+        }
+
+        function gameStep() {
+            if (gameState === "PLAYING") moveSnake();
+        }
+
+        function startGame() {
+            snake = [{ x: 10, y: 10 }]; food = getRandomFood(); direction = "RIGHT"; nextDirection = "RIGHT";
+            score = 0; speed = INITIAL_SPEED; gameState = "PLAYING";
+            updateUI();
+            if (gameLoop) clearInterval(gameLoop);
+            gameLoop = setInterval(gameStep, speed);
+            sound.playPause();
+        }
+
+        document.getElementById("startBtn").onclick = startGame;
+        document.getElementById("restartBtn").onclick = startGame;
+        document.getElementById("resumeBtn").onclick = () => { gameState = "PLAYING"; updateUI(); };
+        document.getElementById("muteBtn").onclick = () => {
+            isMuted = !isMuted; sound.toggle(!isMuted);
+            document.getElementById("muteBtn").innerHTML = `<i data-lucide="${isMuted ? 'volume-x' : 'volume-2'}" class="w-4 h-4"></i><span>${isMuted ? 'Suara Mati' : 'Suara Nyala'}</span>`;
+            lucide.createIcons();
+        };
+
+        window.onkeydown = (e) => {
+            const k = e.key.toLowerCase();
+            if ((k === "arrowup" || k === "w") && direction !== "DOWN") nextDirection = "UP";
+            if ((k === "arrowdown" || k === "s") && direction !== "UP") nextDirection = "DOWN";
+            if ((k === "arrowleft" || k === "a") && direction !== "RIGHT") nextDirection = "LEFT";
+            if ((k === "arrowright" || k === "d") && direction !== "LEFT") nextDirection = "RIGHT";
+            if (k === " ") {
+                if (gameState === "PLAYING") gameState = "PAUSED";
+                else if (gameState === "PAUSED") gameState = "PLAYING";
+                updateUI();
+            }
+        };
+
+        updateUI();
+        fetchLeaderboard();
+        lucide.createIcons();
+    </script>
+</body>
+</html>

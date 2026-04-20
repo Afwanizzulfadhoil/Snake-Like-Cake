@@ -1,8 +1,11 @@
 import express from "express";
-import { createServer as createViteServer } from "vite";
 import path from "path";
 import pg from "pg";
 import dotenv from "dotenv";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 dotenv.config();
 
@@ -15,14 +18,6 @@ async function startServer() {
   // Database setup
   const dbUrl = process.env.DATABASE_URL;
   
-  if (!dbUrl) {
-    console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.error("❌ DATABASE_URL is missing!");
-    console.error("Please add it to the Secrets panel in AI Studio Settings.");
-    console.error("URL provided: postgresql://neondb_owner:***@ep-raspy-scene-ao7t9x3e...");
-    console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  }
-
   const pool = new Pool({
     connectionString: dbUrl,
     ssl: dbUrl ? {
@@ -47,11 +42,12 @@ async function startServer() {
     } catch (err) {
       console.error("❌ Database connection error:", err);
     }
-  } else {
-    console.warn("⚠️ Skipping database initialization because DATABASE_URL is not provided.");
   }
 
   app.use(express.json());
+
+  // Serve static files from the 'public' directory
+  app.use(express.static(path.join(__dirname, "public")));
 
   // API Routes
   app.get("/api/leaderboard", async (req, res) => {
@@ -78,23 +74,13 @@ async function startServer() {
     }
   });
 
-  // Vite middleware for development
-  if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
-    });
-    app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), "dist");
-    app.use(express.static(distPath));
-    app.get("*", (req, res) => {
-      res.sendFile(path.join(distPath, "index.html"));
-    });
-  }
+  // Serve index.html for all other requests (SPA behavior if needed)
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "index.html"));
+  });
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`Server running on http://0.0.0.0:${PORT}`);
   });
 }
 
